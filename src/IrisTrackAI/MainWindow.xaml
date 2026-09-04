@@ -1,0 +1,299 @@
+<Window x:Class="IrisTrackAI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="IrisTrack AI — Asistente Inteligente de Análisis de Video"
+        Icon="Assets/IrisTrackAI.ico"
+        Height="720" Width="920" MinHeight="620" MinWidth="820"
+        Background="{StaticResource WindowGradient}" WindowStartupLocation="CenterScreen">
+    <Grid Margin="13">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header compacto / HUD -->
+        <Border Grid.Row="0" Background="#D907121B" CornerRadius="16" BorderBrush="#1B4257" BorderThickness="1"
+                Padding="13,9" Margin="0,0,0,9">
+            <Border.Effect>
+                <DropShadowEffect Color="#003248" BlurRadius="18" ShadowDepth="0" Opacity="0.35"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="54" Height="54" CornerRadius="12" Background="#061925" BorderBrush="#1B617A" BorderThickness="1" Padding="4">
+                    <Image Source="Assets/IrisTrackAI_Icon.png" Stretch="Uniform"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="IrisTrack" FontSize="24" FontWeight="SemiBold" Foreground="#F1FAFF"/>
+                        <TextBlock Text=" AI" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource Accent}"/>
+                    </StackPanel>
+                    <TextBlock Text="VISUAL TRACKING ENGINE" Foreground="#6E98AE" FontSize="9.5" FontWeight="SemiBold" Margin="1,1,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Style="{StaticResource InfoChip}" ToolTip="Todo el análisis se realiza localmente en tu equipo.">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Accent}" Margin="0,0,6,0"/>
+                            <TextBlock Text="LOCAL · OFFLINE" FontSize="10" FontWeight="SemiBold" Foreground="#C1F2FF"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource InfoChip}" ToolTip="F8 activa o desactiva YOLO sin abrir esta ventana.">
+                        <TextBlock Text="F8 · YOLO" FontSize="10" FontWeight="SemiBold" Foreground="#C1F2FF"/>
+                    </Border>
+                </StackPanel>
+                <Border Height="2" VerticalAlignment="Bottom" Grid.ColumnSpan="3" Margin="0,0,0,-9">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#0032D7FF" Offset="0"/>
+                            <GradientStop Color="#B032D7FF" Offset="0.32"/>
+                            <GradientStop Color="#3032D7FF" Offset="0.72"/>
+                            <GradientStop Color="#0032D7FF" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <!-- 01 Ventana -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Margin="0,0,0,7">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource NumberBadge}"><TextBlock Text="01" FontWeight="Bold" Foreground="#06121B"/></Border>
+                                <TextBlock Text="VENTANA / ACOPLE" FontSize="13.5" FontWeight="Bold" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                            </StackPanel>
+                            <Border DockPanel.Dock="Right" Style="{StaticResource StatusChip}">
+                                <TextBlock x:Name="TargetStatus" Text="SIN ACOPLAR" Foreground="{StaticResource Muted}" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxWidth="390"/>
+                            </Border>
+                        </DockPanel>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="WindowCombo" Grid.Column="0" MaxDropDownHeight="260"
+                                      ToolTip="Elegí VLC u otra ventana de reproducción que IrisTrack debe analizar."/>
+                            <Button Grid.Column="1" Content="↻" Click="RefreshWindows_Click" Style="{StaticResource SecondaryButton}" Width="42"
+                                    ToolTip="Actualizar la lista de ventanas abiertas."/>
+                            <Button Grid.Column="2" x:Name="AttachButton" Content="ACOPLAR" Click="Attach_Click" Style="{StaticResource PrimaryButton}" MinWidth="115"
+                                    ToolTip="Acopla IrisTrack a la ventana elegida, inicia YOLO y oculta este panel."/>
+                            <Button Grid.Column="3" Content="×" Click="Detach_Click" Style="{StaticResource GhostButton}" Width="42"
+                                    ToolTip="Desacoplar IrisTrack de la ventana actual."/>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 02 Detección -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,7">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource NumberBadge}"><TextBlock Text="02" FontWeight="Bold" Foreground="#06121B"/></Border>
+                                <TextBlock Text="DETECCIÓN EN VIVO" FontSize="13.5" FontWeight="Bold" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                            </StackPanel>
+                            <Border DockPanel.Dock="Right" Style="{StaticResource StatusChip}">
+                                <TextBlock x:Name="DetectionModeBadge" Text="TODAS LAS CLASES" Foreground="{StaticResource Accent}" FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </DockPanel>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1"/><ColumnDefinition Width="0.95*"/></Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                <WrapPanel>
+                                    <CheckBox x:Name="DetectionEnabled" Content="YOLO ACTIVO" IsChecked="True" Checked="SettingChanged" Unchecked="SettingChanged"
+                                              ToolTip="Prende o apaga la detección. Atajo global: F8."/>
+                                    <CheckBox x:Name="OnlyForeground" Content="SÓLO VENTANA EN USO" IsChecked="True"
+                                              ToolTip="Pausa IrisTrack cuando la ventana analizada deja de estar en primer plano."/>
+                                </WrapPanel>
+                                <Grid Margin="3,5,3,3">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="112"/><ColumnDefinition Width="*"/><ColumnDefinition Width="50"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Confianza" VerticalAlignment="Center" Foreground="#9CB4C5"/>
+                                    <Slider Grid.Column="1" x:Name="ConfidenceSlider" Minimum="0.15" Maximum="0.90" Value="0.45" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                            ToolTip="Confianza mínima. Bajala para ser más sensible; subila para reducir falsos positivos."/>
+                                    <Border Grid.Column="2" Background="#0A2937" BorderBrush="#16536A" BorderThickness="1" CornerRadius="7" Padding="5,3" Margin="7,0,0,0">
+                                        <TextBlock x:Name="ConfidenceText" Text="45%" Foreground="{StaticResource Accent}" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                                <ComboBox x:Name="AnalysisRateCombo" SelectedIndex="0" SelectionChanged="AnalysisRateCombo_SelectionChanged"
+                                          ToolTip="Limita cuántos análisis YOLO hace por segundo. Menos análisis reduce CPU, pero aumenta la posibilidad de perder objetos rápidos.">
+                                    <ComboBoxItem Content="Máximo · prioridad detección" Tag="0"/>
+                                    <ComboBoxItem Content="Balanceado · hasta 3 análisis/s" Tag="3"/>
+                                    <ComboBoxItem Content="Ahorro · hasta 2 análisis/s" Tag="2"/>
+                                    <ComboBoxItem Content="Eco · hasta 1 análisis/s" Tag="1"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <Border Grid.Column="1" Width="1" Background="#173547"/>
+
+                            <StackPanel Grid.Column="2" Margin="14,0,0,0">
+                                <TextBlock Text="OBJETIVO" Foreground="{StaticResource Accent}" FontSize="10.5" FontWeight="Bold" Margin="3,0,0,3"/>
+                                <ComboBox x:Name="DetectionTargetCombo" SelectedIndex="0" SelectionChanged="DetectionTargetCombo_SelectionChanged"
+                                          ToolTip="Filtra lo que IrisTrack muestra y sigue. Elegir una clase reduce el postprocesado y evita ruido visual.">
+                                    <ComboBoxItem Content="Todos los objetos" Tag="-1"/>
+                                    <ComboBoxItem Content="Vehículos motorizados" Tag="2,3,5,7"/>
+                                    <ComboBoxItem Content="Persona" Tag="0"/>
+                                    <ComboBoxItem Content="Bicicleta" Tag="1"/>
+                                    <ComboBoxItem Content="Auto" Tag="2"/>
+                                    <ComboBoxItem Content="Moto" Tag="3"/>
+                                    <ComboBoxItem Content="Colectivo" Tag="5"/>
+                                    <ComboBoxItem Content="Camión" Tag="7"/>
+                                    <ComboBoxItem Content="Perro" Tag="16"/>
+                                </ComboBox>
+                                <TextBlock x:Name="DetectionTargetStatus" Visibility="Collapsed"/>
+                                <TextBlock x:Name="PerformanceHint" Visibility="Collapsed"/>
+                                <TextBlock x:Name="ModelStatus" Text="Modelo: pendiente" Foreground="#7796AA" FontSize="10.5" Margin="4,8,4,0"
+                                           ToolTip="Motor YOLO y proveedor de ejecución actual."/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 03 Cruce de línea -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,7">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource NumberBadge}"><TextBlock Text="03" FontWeight="Bold" Foreground="#06121B"/></Border>
+                                <TextBlock Text="CRUCE / MOVIMIENTO" FontSize="13.5" FontWeight="Bold" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                            </StackPanel>
+                            <Border DockPanel.Dock="Right" Style="{StaticResource StatusChip}">
+                                <TextBlock x:Name="LineModeBadge" Text="MODO NORMAL" Foreground="{StaticResource Accent}" FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </DockPanel>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="0.92*"/><ColumnDefinition Width="0.75*"/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <ComboBox x:Name="AnalysisModeCombo" SelectedIndex="0" SelectionChanged="AnalysisModeCombo_SelectionChanged"
+                                          ToolTip="Modo normal muestra detecciones. Cruce de línea confirma sólo cuando el objetivo atraviesa la línea dibujada.">
+                                    <ComboBoxItem Content="Detección normal" Tag="normal"/>
+                                    <ComboBoxItem Content="Cruce de línea" Tag="line"/>
+                                </ComboBox>
+                                <WrapPanel>
+                                    <Button Content="＋ LÍNEA" Click="DrawLine_Click" Style="{StaticResource SecondaryButton}" ToolTip="Dibujar o mover la línea directamente sobre el video."/>
+                                    <Button Content="BORRAR" Click="ClearLine_Click" Style="{StaticResource GhostButton}" ToolTip="Eliminar la línea guardada."/>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="5,0,10,0">
+                                <ComboBox x:Name="CrossingDirectionCombo" SelectedIndex="0" ToolTip="Elegí qué dirección debe contar como cruce.">
+                                    <ComboBoxItem Content="Cualquier dirección" Tag="0"/>
+                                    <ComboBoxItem Content="A → B" Tag="1"/>
+                                    <ComboBoxItem Content="B → A" Tag="2"/>
+                                </ComboBox>
+                                <CheckBox x:Name="CaptureOnCrossing" Content="CAPTURAR CRUCE" IsChecked="True"
+                                          ToolTip="Guarda automáticamente una captura cuando el objetivo cruza la línea."/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Margin="5,0,0,0">
+                                <CheckBox x:Name="MotionWakeEnabled" Content="DORMIR YOLO SIN MOVIMIENTO" IsChecked="True"
+                                          ToolTip="Usa un detector liviano cerca de la línea y despierta YOLO sólo cuando hay movimiento. Es el modo que más puede ahorrar CPU en cámaras fijas."/>
+                                <CheckBox x:Name="LineNearOnly" Content="MOSTRAR SÓLO CERCA DE LA LÍNEA" IsChecked="True"
+                                          ToolTip="Oculta detecciones alejadas de la línea para reducir ruido visual."/>
+                                <Border Style="{StaticResource StatusChip}" Margin="3,5,3,0">
+                                    <TextBlock x:Name="LineStatus" Text="No hay línea definida." Foreground="#B9D5E4" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border BorderBrush="#18394A" BorderThickness="0,1,0,0" Margin="0,9,0,0" Padding="0,8,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="＋ IGNORAR ZONA" Click="AddIgnoreZone_Click" Style="{StaticResource SecondaryButton}"
+                                        ToolTip="Dibujá un sector donde IrisTrack debe descartar detecciones. Ideal para autos estacionados u objetos fijos."/>
+                                <Button Grid.Column="1" Content="ZONA DE INTERÉS" Click="SetInterestZone_Click" Style="{StaticResource SecondaryButton}"
+                                        ToolTip="IrisTrack mostrará únicamente detecciones cuyo centro esté dentro de esta zona. Al dibujar otra, reemplaza la anterior."/>
+                                <Button Grid.Column="2" Content="BORRAR ZONAS" Click="ClearZones_Click" Style="{StaticResource GhostButton}"
+                                        ToolTip="Elimina todas las zonas ignoradas y la zona de interés."/>
+                                <Border Grid.Column="3" Style="{StaticResource StatusChip}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock x:Name="ZoneStatus" Text="Sin zonas activas" Foreground="#9CBCCD" FontSize="10"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 04 Capturas -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,5">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,7">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource NumberBadge}"><TextBlock Text="04" FontWeight="Bold" Foreground="#06121B"/></Border>
+                                <TextBlock Text="CAPTURAS / DESTINO AUTO" FontSize="13.5" FontWeight="Bold" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                            </StackPanel>
+                            <Border DockPanel.Dock="Right" Style="{StaticResource StatusChip}" ToolTip="F10 activa o desactiva las capturas automáticas.">
+                                <TextBlock Text="F10 · CAPTURAS" Foreground="#A8C8D8" FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </DockPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1"/><ColumnDefinition Width="0.95*"/></Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                <WrapPanel>
+                                    <CheckBox x:Name="AutoCaptureEnabled" Content="CAPTURAS AUTOMÁTICAS" IsChecked="False" Checked="CaptureSettingChanged" Unchecked="CaptureSettingChanged"
+                                              ToolTip="Guarda una vez cada objeto nuevo. Si elegiste un objetivo específico, las capturas siguen ese objetivo automáticamente."/>
+                                    <CheckBox x:Name="SaveCrop" Content="RECORTE" IsChecked="True" ToolTip="Guardar el recorte del objeto detectado."/>
+                                    <CheckBox x:Name="SaveFrame" Content="FOTOGRAMA" IsChecked="True" ToolTip="Guardar también el fotograma completo."/>
+                                </WrapPanel>
+                                <WrapPanel ToolTip="Estas clases se usan para capturas sólo cuando el objetivo de detección está en 'Todos'.">
+                                    <CheckBox x:Name="CapPerson" Content="Persona"/>
+                                    <CheckBox x:Name="CapBicycle" Content="Bici"/>
+                                    <CheckBox x:Name="CapCar" Content="Auto"/>
+                                    <CheckBox x:Name="CapMotorcycle" Content="Moto"/>
+                                    <CheckBox x:Name="CapBus" Content="Colectivo"/>
+                                    <CheckBox x:Name="CapTruck" Content="Camión"/>
+                                    <CheckBox x:Name="CapDog" Content="Perro"/>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <Border Grid.Column="1" Width="1" Background="#173547"/>
+
+                            <Grid Grid.Column="2" Margin="14,0,0,0">
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <TextBox x:Name="VideoPathText" Grid.Row="0" IsReadOnly="True" Text="AUTO · esperando video"
+                                         ToolTip="IrisTrack intenta detectar automáticamente el archivo que VLC u otro reproductor tiene abierto. Las capturas se guardan junto al video, sin vincular nada manualmente."/>
+                                <Button Grid.Row="1" Content="ABRIR CAPTURAS" Click="OpenCaptures_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"
+                                        ToolTip="Abrir la carpeta automática donde IrisTrack está guardando las capturas."/>
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <DockPanel Margin="4,2,4,2">
+                    <TextBlock Text="F8 YOLO   ·   F9 CAPTURA AHORA   ·   F10 CAPTURAS AUTO" Foreground="#65899F" FontSize="10"/>
+                    <TextBlock DockPanel.Dock="Right" Text="EDGE MENU · BORDE DERECHO" Foreground="#2EAECB" FontSize="9.5" FontWeight="SemiBold"
+                               ToolTip="Con IrisTrack acoplado, llevá el mouse al borde derecho de la ventana analizada para abrir el menú invisible."/>
+                </DockPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#D907131D" BorderBrush="#193A4D" BorderThickness="1" CornerRadius="10" Padding="9,6" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="#61758A" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                    <TextBlock x:Name="PerfStatus" Text="En espera" Foreground="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="♡ APOYAR PROYECTO" Click="OpenRepository_Click"
+                        Style="{StaticResource GhostButton}" Padding="8,3" Margin="8,0,8,0" MinWidth="0"
+                        Foreground="#71CDE8" FontSize="9.5" FontWeight="SemiBold"
+                        ToolTip="Abrir el repositorio oficial de IrisTrack AI. Allí podés ver el código, las releases y colaborar voluntariamente con el proyecto."/>
+                <TextBlock Grid.Column="2" x:Name="CaptureCountText" Text="Capturas: 0" Foreground="{StaticResource Accent}" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
