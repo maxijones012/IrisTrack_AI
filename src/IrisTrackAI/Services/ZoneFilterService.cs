@@ -23,10 +23,14 @@ public static class ZoneFilterService
             var cx = (d.Box.Left + d.Box.Width / 2.0) / sourceW;
             var cy = (d.Box.Top + d.Box.Height / 2.0) / sourceH;
 
+            // Si existe una zona de interés, el centro del objeto debe caer dentro de ella.
             if (interest.Length > 0 && !interest.Any(z => z.Contains(cx, cy)))
                 continue;
+
+            // Una zona ignorada siempre tiene prioridad sobre la zona de interés.
             if (ignore.Any(z => z.Contains(cx, cy)))
                 continue;
+
             filtered.Add(d);
         }
         return filtered;
