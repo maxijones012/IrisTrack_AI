@@ -163,6 +163,7 @@ public partial class OverlayWindow : Window
         };
         OverlayCanvas.Children.Add(visual);
 
+        // A/B representan lados de la línea (no sus extremos).
         var mx = (x1 + x2) / 2.0;
         var my = (y1 + y2) / 2.0;
         var dx = x2 - x1;
