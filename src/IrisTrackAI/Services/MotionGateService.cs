@@ -35,7 +35,7 @@ public sealed class MotionGateService
         var data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
         try
         {
-            const int step = 10;
+            const int step = 10; // Muestreo liviano: ~1/100 de los píxeles.
             var values = new List<byte>(Math.Max(128, bitmap.Width * bitmap.Height / (step * step * 5)));
             var basePtr = (byte*)data.Scan0;
 
@@ -48,6 +48,7 @@ public sealed class MotionGateService
                     var nx = (double)x / bitmap.Width;
                     if (LineCrossingService.DistanceToSegment(nx, ny, line.X1, line.Y1, line.X2, line.Y2) > band) continue;
                     var p = row + x * 3;
+                    // BGR -> luminancia aproximada con enteros.
                     values.Add((byte)((p[2] * 77 + p[1] * 150 + p[0] * 29) >> 8));
                 }
             }
@@ -57,7 +58,7 @@ public sealed class MotionGateService
             {
                 _previous = values.ToArray();
                 _sampleCount = values.Count;
-                return true;
+                return true; // Primera muestra: despertamos para no perder el inicio.
             }
 
             var changed = 0;
@@ -67,6 +68,7 @@ public sealed class MotionGateService
                 _previous[i] = values[i];
             }
 
+            // Con CCTV comprimido toleramos ruido leve. Aproximadamente 2,2% de muestras cambiadas.
             return changed >= Math.Max(4, (int)(values.Count * 0.022));
         }
         finally
