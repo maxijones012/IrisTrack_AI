@@ -10,9 +10,9 @@ public sealed class HotKeyManager : IDisposable
     public HotKeyManager(nint hwnd)
     {
         _hwnd=hwnd; _source=HwndSource.FromHwnd(hwnd); _source.AddHook(WndProc);
-        NativeMethods.RegisterHotKey(hwnd, 8, 0, 0x77);
-        NativeMethods.RegisterHotKey(hwnd, 9, 0, 0x78);
-        NativeMethods.RegisterHotKey(hwnd,10, 0, 0x79);
+        NativeMethods.RegisterHotKey(hwnd, 8, 0, 0x77);  // F8
+        NativeMethods.RegisterHotKey(hwnd, 9, 0, 0x78);  // F9
+        NativeMethods.RegisterHotKey(hwnd,10, 0, 0x79);  // F10
     }
     private nint WndProc(nint hwnd,int msg,nint wParam,nint lParam,ref bool handled)
     {
