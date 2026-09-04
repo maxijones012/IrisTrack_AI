@@ -80,11 +80,13 @@ IrisTrack AI se distribuye bajo la **GNU Affero General Public License v3.0 (AGP
 
 Podés usar, estudiar, modificar y redistribuir el software de acuerdo con los términos de esa licencia. Las versiones derivadas y distribuidas deben respetar las obligaciones de AGPL-3.0.
 
-## Donaciones
+## ❤️ Apoyar IrisTrack AI
 
 **IrisTrack AI es gratuito y de código abierto.**
 
-Si la herramienta te resulta útil y querés colaborar con su desarrollo, podés realizar una donación voluntaria mediante los medios que publique el proyecto.
+Si la herramienta te resulta útil y querés colaborar con su desarrollo, podés realizar una donación voluntaria mediante Mercado Pago:
+
+### [☕ Donar con Mercado Pago](https://link.mercadopago.com.ar/softwareparatodos)
 
 Las donaciones:
 
@@ -92,6 +94,8 @@ Las donaciones:
 - no desbloquean funciones;
 - no convierten la aplicación en una versión Premium;
 - ayudan a sostener desarrollo, pruebas y mejoras futuras.
+
+GitHub también mostrará el botón **Sponsor** del repositorio utilizando el mismo enlace.
 
 ## Estado del proyecto
 
