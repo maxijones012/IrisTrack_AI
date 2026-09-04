@@ -41,6 +41,7 @@ public sealed class LineCrossingService
         var cy = (detection.Box.Top + detection.Box.Height / 2f) / sourceH;
         var signed = SignedSide(line, cx, cy);
 
+        // Zona muerta mínima para evitar falsos cruces por vibración de la caja YOLO.
         const double epsilon = 0.004;
         var currentSide = signed > epsilon ? 1 : signed < -epsilon ? -1 : 0;
 
@@ -63,11 +64,13 @@ public sealed class LineCrossingService
         var to = currentSide;
         state.StableSide = currentSide;
 
+        // Un mismo track no puede disparar varias veces por oscilación cerca de la línea.
         if (now - state.LastCrossing < TimeSpan.FromSeconds(1.25)) return false;
 
         var actualDirection = from < to ? CrossingDirection.AtoB : CrossingDirection.BtoA;
         if (direction != CrossingDirection.Any && direction != actualDirection) return false;
 
+        // El centro debe estar razonablemente cerca del segmento real y no de su prolongación infinita.
         if (!IsNearLine(detection, line, sourceW, sourceH, 0.16)) return false;
 
         state.LastCrossing = now;
