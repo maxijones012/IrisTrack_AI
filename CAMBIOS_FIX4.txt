@@ -1,0 +1,18 @@
+IrisTrack AI R1 NET8 FIX4 — INTERFAZ + OBJETIVO DE DETECCIÓN
+
+- Interfaz rediseñada y más compacta.
+- Header nuevo con isotipo IrisTrack AI y estados rápidos.
+- Controles y listas desplegables oscurecidos para integrarse con el tema.
+- Nueva sección OBJETIVO DE DETECCIÓN:
+  Todos / Persona / Bicicleta / Auto / Moto / Colectivo / Camión / Perro.
+- El overlay, tracking y capturas reciben sólo las clases seleccionadas.
+- En modelos con salida tradicional se evita recorrer clases YOLO no seleccionadas durante postprocesado.
+- Nuevo RITMO DE ANÁLISIS:
+  Máximo / hasta 3 análisis-s / hasta 2 análisis-s / hasta 1 análisis-s.
+- El limitador tiene en cuenta el tiempo real de inferencia para no sumar esperas innecesarias.
+- Barra de estado muestra análisis/s, detecciones y objetivo activo.
+
+NOTA DE RENDIMIENTO
+Elegir una única clase no elimina el costo principal de la inferencia YOLO26: el modelo todavía analiza
+la imagen completa. Sí reduce postprocesado, overlay, tracking y trabajo posterior. Para un ahorro de CPU
+más visible, combinar una clase objetivo con 2 o 1 análisis por segundo.

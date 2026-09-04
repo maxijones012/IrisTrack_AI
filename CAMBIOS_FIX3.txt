@@ -1,0 +1,12 @@
+IrisTrack AI R1 - NET8 FIX3
+
+Correcciones de compilacion:
+- CaptureHistoryService.cs: agregado System.IO (File, Path, Directory).
+- ModelManager.cs: agregado System.IO (File, Path, Directory, FileInfo).
+- MainWindow.xaml.cs: agregado System.IO.
+- MainWindow.xaml.cs: OpenFileDialog fijado explicitamente a Microsoft.Win32.OpenFileDialog.
+- OverlayWindow.xaml.cs: Brushes fijado explicitamente a System.Windows.Media.Brushes.
+- YoloDetector.cs: NodeMetadata.Dimensions usa Length en lugar de Count.
+- Se mantienen los fixes previos para WPF/WinForms y .NET 8.
+
+Compilar con COMPILAR.bat.

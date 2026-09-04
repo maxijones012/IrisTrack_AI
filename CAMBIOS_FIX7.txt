@@ -1,0 +1,10 @@
+IRISTRACK AI — FIX7 — MENÚ LATERAL INVISIBLE
+
+- Nueva franja invisible de activación en el borde superior derecho de la ventana analizada.
+- Al acercar el mouse aparece un menú textual sin paneles ni botones visibles.
+- Animación suave de entrada/salida (fade + desplazamiento).
+- Accesos rápidos: TODOS, PERSONA, BICICLETA, MOTO, VEHÍCULOS, DIBUJAR LÍNEA, MODO NORMAL y YOLO ON/OFF.
+- El menú se excluye de la captura para no contaminar el análisis de YOLO.
+- Sólo ocupa 5 px cuando está oculto.
+- Respeta la ventana acoplada, se reposiciona al mover/redimensionar y se oculta si la ventana deja de estar activa según la configuración existente.
+- Todas las funciones previas se mantienen.

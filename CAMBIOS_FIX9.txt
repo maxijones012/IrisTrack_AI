@@ -1,0 +1,7 @@
+IrisTrack AI - FIX9
+
+Correccion de compilacion WPF en App.xaml:
+- Corregida referencia invalida a SelectionBoxItem/SelectionBoxItemTemplate dentro del template interno de ToggleButton.
+- Ahora ambos valores se obtienen explicitamente desde el ComboBox ancestro.
+- Evita error MC3011: ToggleButton.SelectionBoxItemProperty no encontrado.
+- Se mantienen todas las mejoras del FIX8: HUD futurista, tooltips, menu invisible, capturas ON/OFF, captura inmediata y deteccion automatica de ruta de video.

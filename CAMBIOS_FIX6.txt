@@ -1,0 +1,11 @@
+IrisTrack AI R1 - NET8 FIX6
+
+Correcciones sobre FIX5:
+- Se resolvieron ambigüedades WPF/WinForms en LineEditorWindow.xaml.cs.
+- Point ahora usa System.Windows.Point.
+- MouseEventArgs ahora usa System.Windows.Input.MouseEventArgs.
+- KeyEventArgs ahora usa System.Windows.Input.KeyEventArgs.
+- Color del editor de línea ahora usa System.Windows.Media.Color explícitamente.
+- Se revisaron los archivos nuevos del modo Cruce de línea para no modificar los tipos System.Drawing que son intencionales en el procesamiento de fotogramas.
+
+Base: FIX5_LINEA_CRUCE. No se removieron funciones.

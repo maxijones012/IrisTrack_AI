@@ -1,0 +1,37 @@
+IrisTrack AI R1 NET8 FIX5 — CRUCE DE LÍNEA + REPOSO POR MOVIMIENTO
+
+SE MANTIENE TODO LO ANTERIOR
+- Detección normal.
+- Selector de ventana y overlay click-through.
+- F8 YOLO On/Off, F9 captura manual, F10 capturas automáticas.
+- Objetivo único / todas las clases.
+- Capturas automáticas por objeto nuevo.
+- Recorte y/o fotograma completo.
+- Historial local y vínculo con el archivo de video.
+- Ritmo Máximo / 3 / 2 / 1 análisis por segundo.
+
+NUEVO: MODO CRUCE DE LÍNEA
+- Modo de análisis seleccionable: Detección normal / Cruce de línea.
+- Botón para dibujar o mover una línea directamente sobre la ventana del video.
+- Línea almacenada en coordenadas normalizadas: se adapta si la ventana cambia de tamaño.
+- Dirección: Cualquiera / A → B / B → A.
+- El objetivo elegido arriba define qué puede disparar el cruce:
+  Todos / Vehículos motorizados / Persona / Bicicleta / Auto / Moto / Colectivo / Camión / Perro.
+- Nuevo grupo "Vehículos motorizados": Auto + Moto + Colectivo + Camión.
+- Al cruzar puede guardar automáticamente recorte y/o fotograma completo.
+- Los archivos de cruce se identifican con prefijo CRUCE_ y el historial registra EventType=CruceLinea.
+- Alerta visual temporal en el overlay al confirmar un cruce.
+- Contador de cruces en la barra de estado.
+
+RENDIMIENTO
+- Opción "Dormir YOLO si no hay movimiento cerca".
+- Mientras la franja alrededor de la línea está quieta, IrisTrack hace sólo un muestreo visual liviano y evita la inferencia YOLO.
+- Ante movimiento, YOLO se despierta inmediatamente y permanece activo 2,5 segundos, renovándose mientras siga habiendo movimiento.
+- El detector de movimiento toma muestras cada 10 píxeles dentro de la franja y no copia el bitmap cuando la captura ya viene en RGB24.
+- Opción "Mostrar detecciones sólo cerca de la línea" para reducir ruido visual y trabajo de overlay.
+- La confirmación de Persona/Bicicleta/Auto/etc. SIEMPRE la hace YOLO; el detector barato sólo decide cuándo despertarlo.
+
+NOTA
+El filtro de movimiento está pensado para cámaras relativamente fijas. Si una cámara tiene paneo constante,
+vibración fuerte, lluvia intensa o cambios continuos de iluminación, puede mantenerse YOLO despierto; en ese caso
+se puede desactivar el reposo por movimiento y el cruce de línea sigue funcionando normalmente.

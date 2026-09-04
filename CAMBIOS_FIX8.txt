@@ -1,0 +1,25 @@
+IRISTRACK AI — FIX8 · HUD FUTURISTA + CAPTURAS AUTO SIN CONFIGURAR
+
+Cambios principales
+- Interfaz principal más compacta, acoplada y estilo HUD futurista.
+- Se eliminaron los textos largos de ayuda de la vista normal.
+- Las ayudas ahora aparecen como ToolTip al dejar el mouse sobre cada control.
+- ComboBox oscuro personalizado para evitar paneles blancos del tema de Windows.
+- Menú invisible del borde derecho ampliado sin tarjetas ni fondos visibles:
+  TODOS / PERSONA / BICICLETA / MOTO / VEHÍCULOS
+  DIBUJAR LÍNEA / MODO NORMAL
+  CAPTURAS ON-OFF / CAPTURA AHORA / YOLO ON-OFF
+- CAPTURAS ON sigue automáticamente el objetivo si elegiste una clase concreta.
+- En objetivo TODOS, si se activan capturas sin clases marcadas, se habilitan las clases disponibles.
+- Resolución automática del archivo reproducido, sin botón Vincular video.
+- Para VLC se prioriza la lista local de medios recientes, con bajo consumo.
+- Si VLC no aporta la ruta o se usa otro reproductor, se intenta resolver desde el proceso como fallback.
+- La ruta se vuelve a comprobar periódicamente para acompañar cambios de video.
+- Cuando se identifica el archivo, las capturas se guardan junto al video en:
+  <nombre_video>_Detecciones\
+- Si la ruta no puede identificarse todavía, IrisTrack sigue intentando y conserva el respaldo en Imágenes.
+
+Rendimiento
+- El resolvedor de VLC sólo lee un archivo INI local pequeño cada varios segundos.
+- PowerShell/CIM NO se ejecuta periódicamente cuando VLC ya ofrece una ruta reciente válida.
+- El menú de borde sigue excluido de la captura de pantalla de IrisTrack.

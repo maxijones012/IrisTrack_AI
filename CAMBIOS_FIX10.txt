@@ -1,0 +1,12 @@
+IrisTrack AI — FIX10 ZONAS DE ANÁLISIS
+
+- Nueva ZONA IGNORADA: se pueden agregar múltiples rectángulos y toda detección cuyo centro caiga dentro se descarta antes del tracking, overlay y capturas.
+- Nueva ZONA DE INTERÉS: permite limitar visualmente el análisis a un único sector. Dibujar una nueva reemplaza la anterior.
+- Las zonas ignoradas tienen prioridad sobre la zona de interés.
+- Nuevo editor de zonas directamente sobre la ventana del video.
+- Zonas visibles de forma discreta en el overlay: rojo = ignorar, verde = interés.
+- Menú invisible del borde derecho: + ZONA IGNORADA / ZONA DE INTERÉS / BORRAR ZONAS.
+- Controles equivalentes en la interfaz principal con ayudas por hover.
+- Persistencia automática por video/ruta; fallback por título de ventana cuando la ruta aún no está disponible.
+- Al cambiar zonas se reinicia el tracker para evitar estados viejos.
+- El filtro de zonas es liviano: reduce postprocesado, tracking, overlay y capturas innecesarias. La inferencia principal de YOLO mantiene su costo.

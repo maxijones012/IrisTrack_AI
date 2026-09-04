@@ -1,0 +1,10 @@
+IrisTrack AI — Identidad integrada
+
+- Nombre oficial: IrisTrack AI.
+- Logo principal: iris/ojos con retícula de seguimiento en celeste.
+- Ícono de Windows y bandeja: IrisTrackAI.ico.
+- Encabezado de interfaz: IrisTrackAI_Brand.png.
+- Logo completo incluido: IrisTrackAI_Logo.png.
+- Título: IrisTrack AI — Asistente Inteligente de Análisis de Video.
+- Ejecutable: IrisTrackAI.exe.
+- Carpeta alternativa de capturas: Imágenes\IrisTrack AI\...

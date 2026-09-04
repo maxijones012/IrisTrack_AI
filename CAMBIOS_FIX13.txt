@@ -1,0 +1,8 @@
+IrisTrack AI - FIX13
+
+- Agrega enlace discreto “♡ APOYAR PROYECTO” dentro de la aplicación.
+- El enlace abre el repositorio oficial: https://github.com/maxijones012/IrisTrack_AI
+- Agrega workflow release.yml para crear releases automáticas al publicar tags v*.
+- El workflow también puede ejecutarse manualmente indicando la versión.
+- Cada release compila .NET 8 self-contained win-x64 y adjunta IrisTrackAI-vX.Y.Z-win-x64.zip.
+- Mantiene todas las funciones de FIX12.

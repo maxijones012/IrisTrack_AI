@@ -1,0 +1,6 @@
+IrisTrack AI - FIX12
+
+Correcciones de compilación sobre FIX11:
+- ZoneEditorWindow: Canvas calificado explícitamente como System.Windows.Controls.Canvas mediante alias WpfCanvas.
+- ZoneProfileService: agregado using System.IO para Path, File y Directory.
+- Se mantiene todo lo incorporado hasta FIX10/FIX11: zonas ignoradas, zona de interés, menú invisible, capturas automáticas, cruce de línea y filtros de objeto.
