@@ -52,6 +52,8 @@ public sealed class VideoSourceResolver
                 candidates.Add(new Candidate(p, 55 - Math.Min(rank++, 12)));
         }
 
+        // Evitamos levantar PowerShell cada pocos segundos si VLC ya nos dio una ruta
+        // local válida. El fallback por proceso sólo se usa cuando hace falta.
         if (candidates.Count == 0)
         {
             var cmdRank = 0;
@@ -97,6 +99,7 @@ public sealed class VideoSourceResolver
             var value = line[5..].Trim();
             if (string.IsNullOrWhiteSpace(value) || value.StartsWith("@Invalid", StringComparison.OrdinalIgnoreCase)) continue;
 
+            // VLC suele guardar: file:///C:/video1.mp4, file:///D:/video2.mp4
             foreach (Match m in Regex.Matches(value, @"file:///.+?(?=,\s*file:///|$)", RegexOptions.IgnoreCase))
             {
                 var raw = m.Value.Trim();
@@ -142,6 +145,7 @@ public sealed class VideoSourceResolver
 
         if (string.IsNullOrWhiteSpace(commandLine)) return results;
 
+        // Tokeniza la línea de comandos respetando rutas entre comillas.
         foreach (Match m in Regex.Matches(commandLine, "\"([^\"]+)\"|([^\\s]+)"))
         {
             var value = m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value;
