@@ -61,7 +61,7 @@ public sealed class YoloDetector : IDisposable
         var dims = output.Dimensions.ToArray();
         var found = new List<Detection>();
 
-        if (dims.Length == 3 && dims[^1] == 6)
+        if (dims.Length == 3 && dims[^1] == 6) // YOLO26 end-to-end: [1, N, 6]
         {
             int n = dims[^2];
             for (int i = 0; i < n; i++)
@@ -75,7 +75,7 @@ public sealed class YoloDetector : IDisposable
                 if (box.Width >= 2 && box.Height >= 2) found.Add(new Detection(cls, Coco[cls], score, box));
             }
         }
-        else if (dims.Length == 3 && dims[1] >= 84)
+        else if (dims.Length == 3 && dims[1] >= 84) // fallback tradicional [1, 84, 8400]
         {
             int attrs = dims[1], n = dims[2], classes = attrs - 4;
             for (int i = 0; i < n; i++)
@@ -91,6 +91,8 @@ public sealed class YoloDetector : IDisposable
                 }
                 else
                 {
+                    // Cuando el modelo usa la salida tradicional evitamos recorrer las 80 clases:
+                    // sólo puntuamos las clases que el usuario pidió ver.
                     foreach (var c in allowedClassIds)
                     {
                         if (c < 0 || c >= classes || c >= Coco.Length) continue;
