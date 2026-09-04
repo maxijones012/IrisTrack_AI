@@ -72,6 +72,18 @@ El repositorio incluirá el código fuente y scripts de compilación de las vers
 
 En las versiones actuales del proyecto se utiliza un flujo de publicación `win-x64` para generar `IrisTrackAI.exe`.
 
+## Releases
+
+El repositorio tiene preparado un workflow de GitHub Actions para generar **releases de Windows automáticamente**.
+
+Al publicar un tag con formato `v*` —por ejemplo `v1.0.0`— GitHub compila la aplicación en `.NET 8`, genera una publicación `win-x64` self-contained y adjunta a la Release un archivo como:
+
+`IrisTrackAI-v1.0.0-win-x64.zip`
+
+El workflow también puede ejecutarse manualmente desde **Actions → Publicar Release de Windows → Run workflow**, indicando la versión que querés publicar.
+
+> El workflow necesita que el código fuente de la versión esté presente en el repositorio antes de ejecutarse.
+
 ## Licencia
 
 Copyright (C) 2026 SoftwareParaTodos / colaboradores de IrisTrack AI.
@@ -96,6 +108,8 @@ Las donaciones:
 - ayudan a sostener desarrollo, pruebas y mejoras futuras.
 
 GitHub también mostrará el botón **Sponsor** del repositorio utilizando el mismo enlace.
+
+La aplicación incluye un acceso discreto **♡ APOYAR PROYECTO** que abre este repositorio oficial; desde acá el usuario puede ver las releases, el código y la opción de colaboración voluntaria.
 
 ## Estado del proyecto
 
