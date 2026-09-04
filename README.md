@@ -8,6 +8,9 @@
 
 La idea es simple: seguís mirando el video con tu reproductor habitual y IrisTrack AI trabaja como una capa de asistencia visual, local y no invasiva.
 
+<img width="1672" height="941" alt="ChatGPT Image 4 sept 2026, 08_00_57 p m" src="https://github.com/user-attachments/assets/712a4f56-fc61-42c3-818a-99adddd0a7a4" />
+
+
 ## Funciones principales
 
 - Selección y acople a una ventana activa.
