@@ -8,6 +8,7 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         var main = new MainWindow();
+        main.InstallFaceEngineOption();
         MainWindow = main;
         main.Show();
     }
