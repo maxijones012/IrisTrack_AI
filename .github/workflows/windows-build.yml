@@ -3,16 +3,49 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
       - run: dotnet restore IrisTrackAI.sln
-      - run: dotnet publish src/IrisTrackAI/IrisTrackAI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/win-x64
+
+      - name: Publicar IrisTrack AI win-x64
+        run: dotnet publish src/IrisTrackAI/IrisTrackAI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/win-x64
+
+      - name: Incluir Microsoft Visual C++ Runtime x64
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) {
+            throw 'No se encontró vswhere.exe en el runner de Windows.'
+          }
+
+          $vs = & $vswhere -latest -products * -property installationPath
+          if ([string]::IsNullOrWhiteSpace($vs)) {
+            throw 'No se encontró una instalación de Visual Studio en el runner.'
+          }
+
+          $redistRoot = Join-Path $vs 'VC\Redist\MSVC'
+          $crtDir = Get-ChildItem $redistRoot -Directory -ErrorAction Stop |
+            Sort-Object Name -Descending |
+            ForEach-Object { Join-Path $_.FullName 'x64\Microsoft.VC143.CRT' } |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+
+          if (-not $crtDir) {
+            throw 'No se encontró Microsoft.VC143.CRT x64 para despliegue app-local.'
+          }
+
+          Copy-Item (Join-Path $crtDir '*.dll') 'publish/win-x64/' -Force
+          Write-Host "VC++ Runtime app-local incluido desde: $crtDir"
+
       - uses: actions/upload-artifact@v4
         with:
           name: IrisTrackAI-win-x64
