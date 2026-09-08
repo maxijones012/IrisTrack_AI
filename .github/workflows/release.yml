@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versión a publicar (ejemplo: v1.0.0)'
+        description: 'Versión a publicar (ejemplo: v1.0.1)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.0.1'
 
 permissions:
   contents: write
@@ -53,6 +53,33 @@ jobs:
           -p:DebugType=None
           -p:DebugSymbols=false
           -o publish/win-x64
+
+      - name: Incluir Microsoft Visual C++ Runtime x64
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) {
+            throw 'No se encontró vswhere.exe en el runner de Windows.'
+          }
+
+          $vs = & $vswhere -latest -products * -property installationPath
+          if ([string]::IsNullOrWhiteSpace($vs)) {
+            throw 'No se encontró una instalación de Visual Studio en el runner.'
+          }
+
+          $redistRoot = Join-Path $vs 'VC\Redist\MSVC'
+          $crtDir = Get-ChildItem $redistRoot -Directory -ErrorAction Stop |
+            Sort-Object Name -Descending |
+            ForEach-Object { Join-Path $_.FullName 'x64\Microsoft.VC143.CRT' } |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+
+          if (-not $crtDir) {
+            throw 'No se encontró Microsoft.VC143.CRT x64 para despliegue app-local.'
+          }
+
+          Copy-Item (Join-Path $crtDir '*.dll') 'publish/win-x64/' -Force
+          Write-Host "VC++ Runtime app-local incluido desde: $crtDir"
 
       - name: Crear ZIP de distribución
         shell: pwsh
