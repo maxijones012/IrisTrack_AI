@@ -1,6 +1,7 @@
 name: Windows Build
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches: [ main ]
 
@@ -15,6 +16,9 @@ jobs:
           dotnet-version: '8.0.x'
 
       - run: dotnet restore IrisTrackAI.sln
+
+      - name: Verificar modo Patentes, interfaz y modelos reales
+        run: dotnet run --project tests/IrisTrackAI.Checks/IrisTrackAI.Checks.csproj -c Release -- --ui --models
 
       - name: Publicar IrisTrack AI win-x64
         run: dotnet publish src/IrisTrackAI/IrisTrackAI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish/win-x64
@@ -45,6 +49,10 @@ jobs:
 
           Copy-Item (Join-Path $crtDir '*.dll') 'publish/win-x64/' -Force
           Write-Host "VC++ Runtime app-local incluido desde: $crtDir"
+
+      - name: Incluir guía del modo Patentes
+        shell: pwsh
+        run: Copy-Item PATENTES.md,THIRD_PARTY_NOTICES.md,LICENSE publish/win-x64/
 
       - uses: actions/upload-artifact@v4
         with:

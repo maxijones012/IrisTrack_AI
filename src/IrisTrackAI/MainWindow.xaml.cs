@@ -13,8 +13,9 @@ namespace IrisTrackAI;
 public partial class MainWindow : Window
 {
     private readonly ScreenCaptureService _capture = new();
-    private readonly ModelManager _models = new();
-    private readonly YoloDetector _detector = new();
+    private readonly DetectionEngine _engine = new();
+    private readonly PlateConsensus _plateConsensus = new();
+    private readonly PlateCaptureService _plateCaptures = new();
     private readonly DetectionTracker _tracker = new();
     private readonly CaptureHistoryService _history = new();
     private readonly LineCrossingService _lineCrossing = new();
@@ -35,7 +36,9 @@ public partial class MainWindow : Window
     private DateTime _motionAwakeUntil = DateTime.MinValue;
     private int _captureCount;
     private int _crossingCount;
-    private bool _modelReady;
+    private Task _loopTask = Task.CompletedTask;
+    private readonly Stopwatch _analysisClock = Stopwatch.StartNew();
+    private bool _uiReady, _shutdownComplete, _sourceResetPending, _trackingResetPending = true;
     private DateTime _nextVideoResolveUtc = DateTime.MinValue;
     private int _videoResolveBusy;
     private string? _zoneProfileKey;
@@ -51,26 +54,15 @@ public partial class MainWindow : Window
         RefreshWindows();
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         SetupTray();
         UpdateDetectionTargetUi();
         UpdateAnalysisRateUi();
         UpdateAnalysisModeUi();
         UpdateZoneStatus();
-        try
-        {
-            ModelStatus.Text = "Modelo: preparando YOLO26n ONNX…";
-            var progress = new Progress<double>(p => ModelStatus.Text = $"Modelo: descargando YOLO26n… {p:P0}");
-            var path = await _models.EnsureModelAsync(progress);
-            await Task.Run(() => _detector.Load(path));
-            _modelReady = true;
-            ModelStatus.Text = $"Modelo: YOLO26n · {_detector.ProviderName}";
-        }
-        catch (Exception ex)
-        {
-            ModelStatus.Text = "No se pudo preparar el modelo: " + ex.Message;
-        }
+        ModelStatus.Text = "Modelo: se prepara al iniciar el análisis";
+        _uiReady = true;
     }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
@@ -90,7 +82,7 @@ public partial class MainWindow : Window
         _tray.DoubleClick += (_,__) => Dispatcher.Invoke(RestoreFromTray);
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Abrir", null, (_,__) => Dispatcher.Invoke(RestoreFromTray));
-        menu.Items.Add("Activar/Desactivar YOLO (F8)", null, (_,__) => Dispatcher.Invoke(() => DetectionEnabled.IsChecked = !(DetectionEnabled.IsChecked == true)));
+        menu.Items.Add("Activar/Desactivar detección (F8)", null, (_,__) => Dispatcher.Invoke(() => DetectionEnabled.IsChecked = !(DetectionEnabled.IsChecked == true)));
         menu.Items.Add("Salir", null, (_,__) => Dispatcher.Invoke(() => { _reallyClose = true; Close(); }));
         _tray.ContextMenuStrip = menu;
     }
@@ -108,25 +100,31 @@ public partial class MainWindow : Window
     }
 
     private bool _reallyClose;
-    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (_shutdownComplete) return;
         if (!_reallyClose)
         {
             e.Cancel = true;
             Hide();
             return;
         }
+        e.Cancel = true;
+        _uiReady = false;
         StopLoop();
+        await _loopTask;
         _overlay?.Close();
         _quickMenu?.Close();
         _hotkeys?.Dispose();
-        _detector.Dispose();
+        _engine.Dispose();
         _lastFrame?.Dispose();
         if (_tray is not null)
         {
             _tray.Visible = false;
             _tray.Dispose();
         }
+        _shutdownComplete = true;
+        Close();
         System.Windows.Application.Current.Shutdown();
     }
 
@@ -162,6 +160,7 @@ public partial class MainWindow : Window
             return;
         }
         _target = t;
+        _sourceResetPending = true;
         _history.LinkedVideoPath = null;
         _nextVideoResolveUtc = DateTime.MinValue;
         LoadZonesForSource(null, t.Title, replaceExisting: true);
@@ -198,214 +197,213 @@ public partial class MainWindow : Window
     {
         StopLoop();
         _loopCts = new CancellationTokenSource();
-        _ = AnalyzeLoopAsync(_loopCts.Token);
+        var previous = _loopTask;
+        _loopTask = RunLoopAfterAsync(previous, _loopCts);
     }
 
     private void StopLoop()
     {
         try { _loopCts?.Cancel(); } catch { }
-        _loopCts?.Dispose();
         _loopCts = null;
     }
+
+    private async Task RunLoopAfterAsync(Task previous, CancellationTokenSource source)
+    {
+        var ct = source.Token;
+        try
+        {
+            await previous;
+            ct.ThrowIfCancellationRequested();
+            if (_trackingResetPending || _sourceResetPending || _engine.LoadedMode != GetDetectionMode())
+            {
+                _tracker.Reset();
+                _plateConsensus.Reset();
+                _lineCrossing.Reset();
+                _motionGate.Reset();
+                _lastDetections = Array.Empty<Detection>();
+                _plateCaptures.Reset();
+                _trackingResetPending = false;
+            }
+            if (_sourceResetPending) { _analysisClock.Restart(); _sourceResetPending = false; }
+            if (_engine.LoadedMode != GetDetectionMode()) _engine.Unload();
+            if (_target is not null) await AnalyzeLoopAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _overlay?.Hide();
+                ModelStatus.Text = "Error: " + ex.Message;
+                PerfStatus.Text = "Análisis detenido. F8 para apagar y volver a intentar.";
+            }
+        }
+        finally { source.Dispose(); }
+    }
+
+    private DetectionMode GetDetectionMode() => (DetectionTargetCombo?.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag?.ToString() switch
+    {
+        "plates" => DetectionMode.Plates,
+        "vehicles-plates" => DetectionMode.VehiclesAndPlates,
+        _ => DetectionMode.General
+    };
 
     private async Task AnalyzeLoopAsync(CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         int analyses = 0;
-
+        var progress = new Progress<string>(message =>
+        {
+            if (!ct.IsCancellationRequested) ModelStatus.Text = "Modelo: " + message;
+        });
         while (!ct.IsCancellationRequested)
         {
             var iteration = Stopwatch.StartNew();
             var t = _target;
-
-            if (t is null || !_modelReady)
+            if (t is null) return;
+            var mode = GetDetectionMode();
+            bool foreground = NativeMethods.IsTargetForeground(t.Hwnd, t.ProcessId);
+            if ((OnlyForeground.IsChecked == true && !foreground) || NativeMethods.IsIconic(t.Hwnd)
+                || !NativeMethods.IsWindowVisible(t.Hwnd))
             {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    _overlay?.Hide();
-                    _quickMenu?.Hide();
-                });
+                _overlay?.Hide(); _quickMenu?.Hide();
                 await Task.Delay(150, ct);
                 continue;
             }
-
-            bool foreground = NativeMethods.IsTargetForeground(t.Hwnd, t.ProcessId);
-            if (OnlyForeground.IsChecked == true && !foreground)
-            {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    _overlay?.Hide();
-                    _quickMenu?.Hide();
-                });
-                await Task.Delay(120, ct);
-                continue;
-            }
-
-            if (NativeMethods.IsIconic(t.Hwnd) || !NativeMethods.IsWindowVisible(t.Hwnd))
-            {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    _overlay?.Hide();
-                    _quickMenu?.Hide();
-                });
-                await Task.Delay(200, ct);
-                continue;
-            }
-
-            await Dispatcher.InvokeAsync(() => EnsureQuickMenu(t.Hwnd));
-
+            EnsureQuickMenu(t.Hwnd);
             if (DateTime.UtcNow >= _nextVideoResolveUtc)
             {
                 _nextVideoResolveUtc = DateTime.UtcNow.AddSeconds(5);
                 _ = RefreshAutoVideoPathAsync(t);
             }
-
             if (DetectionEnabled.IsChecked != true)
             {
-                await Dispatcher.InvokeAsync(() => _overlay?.Hide());
+                _overlay?.Hide();
                 await Task.Delay(120, ct);
                 continue;
             }
-
+            await _engine.EnsureModeAsync(mode, progress, ct);
+            ct.ThrowIfCancellationRequested();
             using var frame = _capture.Capture(t);
-            if (frame is null)
-            {
-                await Task.Delay(80, ct);
-                continue;
-            }
-
-            // La captura manual siempre conserva el fotograma más reciente, incluso si YOLO está dormido.
+            if (frame is null) { await Task.Delay(80, ct); continue; }
+            var capturedAt = DateTime.Now;
+            var elapsed = _analysisClock.Elapsed;
             lock (this)
             {
                 _lastFrame?.Dispose();
                 _lastFrame = (Bitmap)frame.Clone();
             }
-
             var activeLine = _analysisLine;
             var lineMode = IsLineMode() && activeLine is { IsValid: true };
-            var motionSleeping = false;
-
+            var zones = GetZoneSnapshot();
             if (lineMode && MotionWakeEnabled.IsChecked == true && activeLine is not null)
             {
                 var motion = await Task.Run(() => _motionGate.HasMotion(frame, activeLine), ct);
+                ct.ThrowIfCancellationRequested();
                 if (motion) _motionAwakeUntil = DateTime.UtcNow.AddSeconds(2.5);
-
                 if (DateTime.UtcNow > _motionAwakeUntil)
                 {
-                    motionSleeping = true;
                     _lastDetections = Array.Empty<Detection>();
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        _overlay ??= new OverlayWindow();
-                        if (!_overlay.IsVisible) _overlay.Show();
-                        _overlay.AlignTo(t.Hwnd);
-                        _overlay.Draw(Array.Empty<Detection>(), frame.Width, frame.Height, activeLine, true, GetZoneSnapshot());
-                        PerfStatus.Text = $"En espera · sin movimiento cerca de la línea · objetivo: {GetObjectiveStatusText()}";
-                        StatusDot.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(93, 121, 142));
-                    });
+                    _overlay ??= new OverlayWindow();
+                    if (!_overlay.IsVisible) _overlay.Show();
+                    _overlay.AlignTo(t.Hwnd);
+                    _overlay.Draw(Array.Empty<Detection>(), frame.Width, frame.Height, activeLine, true, zones);
+                    PerfStatus.Text = "En espera · sin movimiento cerca de la línea";
                     await Task.Delay(100, ct);
                     continue;
                 }
             }
-
             var threshold = (float)ConfidenceSlider.Value;
             var allowedClasses = GetSelectedDetectionClassIds();
-            var detections = await Task.Run(() => _detector.Detect(frame, threshold, allowedClasses), ct);
-
-            // Las zonas se aplican antes del tracking/overlay/capturas para no gastar trabajo
-            // secundario en objetos que el usuario decidió ignorar.
-            var zones = GetZoneSnapshot();
-            detections = ZoneFilterService.Apply(detections, zones, frame.Width, frame.Height);
+            var inference = Stopwatch.StartNew();
+            var detections = await Task.Run(() => _engine.Detect(frame, threshold, allowedClasses, zones, ct), ct);
+            ct.ThrowIfCancellationRequested();
             detections = _tracker.Update(detections, TimeSpan.FromSeconds(1.5));
+            foreach (var plate in detections.Where(d => d.IsPlate))
+            {
+                PlateReading? reading = null;
+                if (_plateConsensus.ShouldRead(plate, elapsed))
+                {
+                    reading = await Task.Run(() => _engine.ReadPlate(frame, plate), ct);
+                    ct.ThrowIfCancellationRequested();
+                }
+                _plateConsensus.Apply(plate, reading, elapsed);
+            }
+            inference.Stop();
             analyses++;
-
-            lock (this)
-            {
-                _lastDetections = detections.ToArray();
-            }
-
-            IReadOnlyList<Detection> overlayDetections = detections;
-            if (lineMode && activeLine is not null && LineNearOnly.IsChecked == true)
-            {
-                overlayDetections = detections
-                    .Where(d => LineCrossingService.IsNearLine(d, activeLine, frame.Width, frame.Height, 0.18))
-                    .ToArray();
-            }
-
+            lock (this) _lastDetections = detections.ToArray();
+            var overlayDetections = lineMode && activeLine is not null && LineNearOnly.IsChecked == true
+                ? detections.Where(d => LineCrossingService.IsNearLine(d, activeLine, frame.Width, frame.Height, .18)).ToArray()
+                : detections;
+            _overlay ??= new OverlayWindow();
+            if (!_overlay.IsVisible) _overlay.Show();
+            _overlay.AlignTo(t.Hwnd);
+            _overlay.Draw(overlayDetections, frame.Width, frame.Height, lineMode ? activeLine : null, false, zones);
+            string? captureError = null;
+            _history.SaveCrop = SaveCrop.IsChecked == true;
+            _history.SaveFullFrame = SaveFrame.IsChecked == true;
             if (lineMode && activeLine is not null)
             {
-                var direction = GetCrossingDirection();
                 foreach (var d in detections)
                 {
-                    if (!_lineCrossing.TryRegisterCrossing(d, activeLine, frame.Width, frame.Height, direction, out var directionText))
-                        continue;
-
+                    // El modo combinado cuenta el vehículo, no también su patente.
+                    if (mode == DetectionMode.VehiclesAndPlates && d.IsPlate) continue;
+                    if (!_lineCrossing.TryRegisterCrossing(d, activeLine, frame.Width, frame.Height, GetCrossingDirection(), out var direction)) continue;
                     _crossingCount++;
-                    var alert = $"CRUCE · {d.ClassName.ToUpperInvariant()} · {directionText} · {d.Confidence:P0}";
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        _overlay?.ShowCrossingAlert(alert);
-                        LineStatus.Text = $"Línea activa · {_crossingCount} cruce(s) detectado(s) · último: {d.ClassName} {directionText}";
-                    });
-
+                    _overlay.ShowCrossingAlert($"CRUCE · {d.DisplayLabel} · {direction}");
+                    LineStatus.Text = $"Línea activa · {_crossingCount} cruce(s) · {d.ClassName} {direction}";
                     if (CaptureOnCrossing.IsChecked == true)
                     {
-                        _history.SaveCrop = SaveCrop.IsChecked == true;
-                        _history.SaveFullFrame = SaveFrame.IsChecked == true;
                         try
                         {
-                            await _history.SaveAsync(frame, d, t.Title, ct, "CruceLinea");
+                            await _history.SaveAsync(frame, d, t.Title, ct, "CruceLinea", capturedAt, elapsed.TotalSeconds);
                             _captureCount++;
                         }
-                        catch { }
+                        catch (OperationCanceledException) { throw; }
+                        catch (Exception ex) { captureError = ex.Message; }
                     }
                 }
             }
-
-            await Dispatcher.InvokeAsync(() =>
-            {
-                _overlay ??= new OverlayWindow();
-                if (!_overlay.IsVisible) _overlay.Show();
-                _overlay.AlignTo(t.Hwnd);
-                _overlay.Draw(overlayDetections, frame.Width, frame.Height, lineMode ? activeLine : null, motionSleeping, GetZoneSnapshot());
-            });
-
-            // Las capturas automáticas originales siguen funcionando de forma independiente al modo línea.
             if (AutoCaptureEnabled.IsChecked == true)
             {
-                _history.SaveCrop = SaveCrop.IsChecked == true;
-                _history.SaveFullFrame = SaveFrame.IsChecked == true;
                 foreach (var d in detections.Where(IsAutoCaptureClass))
                 {
-                    if (!_tracker.ShouldAutoCapture(d)) continue;
+                    ct.ThrowIfCancellationRequested();
                     try
                     {
-                        await _history.SaveAsync(frame, d, t.Title, ct);
-                        _captureCount++;
+                        if (d.IsPlate)
+                        {
+                            var folder = _history.ResolveOutputFolder(t.Title);
+                            var videoPath = _history.LinkedVideoPath;
+                            bool crop = _history.SaveCrop, full = _history.SaveFullFrame;
+                            var created = await Task.Run(() => _plateCaptures.SaveAsync(frame, d, folder, t.Title, videoPath,
+                                capturedAt, elapsed, crop, full, ct), ct);
+                            if (created) _captureCount++;
+                        }
+                        else if (!_tracker.HasAutoCaptured(d))
+                        {
+                            await _history.SaveAsync(frame, d, t.Title, ct, "Deteccion", capturedAt, elapsed.TotalSeconds);
+                            _tracker.MarkAutoCaptured(d);
+                            _captureCount++;
+                        }
                     }
-                    catch { }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex) { captureError = ex.Message; }
                 }
             }
-
-            if (sw.ElapsedMilliseconds >= 1000)
+            if (sw.ElapsedMilliseconds >= 1000 || captureError is not null)
             {
-                var aps = analyses / (sw.ElapsedMilliseconds / 1000.0);
-                analyses = 0;
-                sw.Restart();
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    var modeText = lineMode ? $"línea · cruces {_crossingCount}" : "normal";
-                    PerfStatus.Text = $"Activo · {aps:0.0} análisis/s · {detections.Count} detecciones · objetivo: {GetObjectiveStatusText()} · {modeText}";
-                    CaptureCountText.Text = $"Capturas: {_captureCount}";
-                    StatusDot.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 215, 255));
-                });
+                var aps = analyses / Math.Max(.001, sw.Elapsed.TotalSeconds);
+                analyses = 0; sw.Restart();
+                ModelStatus.Text = "Modelo: " + _engine.Description;
+                PerfStatus.Text = captureError is not null ? "Error al guardar: " + captureError
+                    : $"Activo · {aps:0.0} análisis/s · {inference.Elapsed.TotalMilliseconds:0} ms IA · {detections.Count} detecciones · {GetObjectiveStatusText()}";
+                CaptureCountText.Text = $"Capturas: {_captureCount}";
+                StatusDot.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(50, 215, 255));
             }
-
             var periodMs = GetSelectedAnalysisPeriodMs();
-            var delayMs = periodMs > 0
-                ? Math.Max(0, periodMs - (int)iteration.ElapsedMilliseconds)
-                : 20;
-            if (delayMs > 0) await Task.Delay(delayMs, ct);
+            var delay = periodMs > 0 ? Math.Max(0, periodMs - (int)iteration.ElapsedMilliseconds) : 20;
+            if (delay > 0) await Task.Delay(delay, ct);
         }
     }
 
@@ -413,6 +411,8 @@ public partial class MainWindow : Window
     {
         if (DetectionTargetCombo?.SelectedItem is not System.Windows.Controls.ComboBoxItem item) return null;
         var raw = item.Tag?.ToString();
+        if (raw == "plates") return new HashSet<int> { Detection.PlateClassId };
+        if (raw == "vehicles-plates") return new HashSet<int> { 2, 3, 5, 7, Detection.PlateClassId };
         if (string.IsNullOrWhiteSpace(raw) || raw == "-1") return null;
 
         var ids = new HashSet<int>();
@@ -454,23 +454,38 @@ public partial class MainWindow : Window
     {
         _lineCrossing.Reset();
         UpdateDetectionTargetUi();
+        if (_uiReady)
+        {
+            _trackingResetPending = true;
+            _overlay?.Hide();
+            StartLoop();
+        }
     }
 
     private void UpdateDetectionTargetUi()
     {
         if (DetectionModeBadge is null || DetectionTargetStatus is null || PerformanceHint is null) return;
         var name = GetSelectedDetectionClassName();
-        if (name is null)
+        var mode = GetDetectionMode();
+        if (PlateHint is not null) PlateHint.Visibility = mode == DetectionMode.General ? Visibility.Collapsed : Visibility.Visible;
+        if (mode != DetectionMode.General)
+        {
+            DetectionModeBadge.Text = mode == DetectionMode.Plates ? "PATENTES · PRUEBA" : "VEHÍCULOS + PATENTES";
+            PerformanceHint.Text = mode == DetectionMode.Plates
+                ? "Analiza únicamente patentes. El detector general queda descargado."
+                : "Busca vehículos y luego lee las patentes dentro de cada vehículo.";
+        }
+        else if (name is null)
         {
             DetectionModeBadge.Text = "TODAS LAS CLASES";
             DetectionTargetStatus.Text = "Detectando todas las clases disponibles.";
-            PerformanceHint.Text = "El filtro por clase reduce overlay, tracking y postprocesado. Para bajar CPU de verdad, usá un objetivo concreto o el modo de cruce con reposo por movimiento.";
+            PerformanceHint.Text = "El filtro por clase reduce overlay, tracking y postprocesado. Para bajar el trabajo del modelo, limitá los análisis por segundo o usá el reposo por movimiento.";
         }
         else
         {
             DetectionModeBadge.Text = $"OBJETIVO · {name.ToUpperInvariant()}";
             DetectionTargetStatus.Text = $"Mostrando y siguiendo únicamente: {name}.";
-            PerformanceHint.Text = $"IrisTrack descarta las demás clases apenas salen del modelo. En cruce de línea, este mismo objetivo define qué puede disparar el evento.";
+            PerformanceHint.Text = "El filtro descarta las otras clases después de ejecutar el detector general.";
         }
         UpdateQuickMenuState();
     }
@@ -611,7 +626,15 @@ public partial class MainWindow : Window
             var path = await Task.Run(() => _videoResolver.TryResolve(target, force));
             if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
             {
+                if (_target?.Hwnd != target.Hwnd) return;
+                var changed = !string.IsNullOrWhiteSpace(_history.LinkedVideoPath)
+                    && !string.Equals(_history.LinkedVideoPath, path, StringComparison.OrdinalIgnoreCase);
                 _history.LinkedVideoPath = path;
+                if (changed)
+                {
+                    _sourceResetPending = true;
+                    StartLoop();
+                }
                 await Dispatcher.InvokeAsync(() =>
                 {
                     LoadZonesForSource(path, target.Title, replaceExisting: false);
@@ -720,6 +743,7 @@ public partial class MainWindow : Window
                 _analysisZones.Add(zone);
             }
             _tracker.Reset();
+            _trackingResetPending = true;
             _lineCrossing.Reset();
             PersistZones();
         }
@@ -736,8 +760,10 @@ public partial class MainWindow : Window
     {
         lock (_analysisZones) _analysisZones.Clear();
         _tracker.Reset();
+        _trackingResetPending = true;
         _lineCrossing.Reset();
         PersistZones();
+        if (_uiReady) StartLoop();
     }
 
     private void OpenCaptures_Click(object sender, RoutedEventArgs e)
@@ -775,6 +801,7 @@ public partial class MainWindow : Window
             StatusDot.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(97, 117, 138));
         }
         UpdateQuickMenuState();
+        if (_uiReady && _target is not null) StartLoop();
     }
 
     private void CaptureSettingChanged(object sender, RoutedEventArgs e)
@@ -847,6 +874,12 @@ public partial class MainWindow : Window
                 break;
             case QuickEdgeCommand.DetectVehicles:
                 SelectDetectionTargetByTag("2,3,5,7");
+                break;
+            case QuickEdgeCommand.DetectPlates:
+                SelectDetectionTargetByTag("plates");
+                break;
+            case QuickEdgeCommand.DetectVehiclesAndPlates:
+                SelectDetectionTargetByTag("vehicles-plates");
                 break;
             case QuickEdgeCommand.DrawLine:
                 DrawLine_Click(this, new RoutedEventArgs());

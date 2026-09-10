@@ -7,6 +7,8 @@ public enum QuickEdgeCommand
     DetectBicycle,
     DetectMotorcycle,
     DetectVehicles,
+    DetectPlates,
+    DetectVehiclesAndPlates,
     DrawLine,
     NormalMode,
     AddIgnoreZone,

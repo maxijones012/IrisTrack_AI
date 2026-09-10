@@ -106,7 +106,7 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="1.05*"/><ColumnDefinition Width="1"/><ColumnDefinition Width="0.95*"/></Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,14,0">
                                 <WrapPanel>
-                                    <CheckBox x:Name="DetectionEnabled" Content="YOLO ACTIVO" IsChecked="True" Checked="SettingChanged" Unchecked="SettingChanged"
+                                    <CheckBox x:Name="DetectionEnabled" Content="DETECCIÓN ACTIVA" IsChecked="True" Checked="SettingChanged" Unchecked="SettingChanged"
                                               ToolTip="Prende o apaga la detección. Atajo global: F8."/>
                                     <CheckBox x:Name="OnlyForeground" Content="SÓLO VENTANA EN USO" IsChecked="True"
                                               ToolTip="Pausa IrisTrack cuando la ventana analizada deja de estar en primer plano."/>
@@ -134,9 +134,11 @@
                             <StackPanel Grid.Column="2" Margin="14,0,0,0">
                                 <TextBlock Text="OBJETIVO" Foreground="{StaticResource Accent}" FontSize="10.5" FontWeight="Bold" Margin="3,0,0,3"/>
                                 <ComboBox x:Name="DetectionTargetCombo" SelectedIndex="0" SelectionChanged="DetectionTargetCombo_SelectionChanged"
-                                          ToolTip="Filtra lo que IrisTrack muestra y sigue. Elegir una clase reduce el postprocesado y evita ruido visual.">
+                                          ToolTip="Elegí qué analizar. Patentes usa sólo el detector específico y el lector. Vehículos + patentes combina ambos análisis.">
                                     <ComboBoxItem Content="Todos los objetos" Tag="-1"/>
                                     <ComboBoxItem Content="Vehículos motorizados" Tag="2,3,5,7"/>
+                                    <ComboBoxItem Content="Patentes · prueba" Tag="plates"/>
+                                    <ComboBoxItem Content="Vehículos + patentes · prueba" Tag="vehicles-plates"/>
                                     <ComboBoxItem Content="Persona" Tag="0"/>
                                     <ComboBoxItem Content="Bicicleta" Tag="1"/>
                                     <ComboBoxItem Content="Auto" Tag="2"/>
@@ -147,8 +149,10 @@
                                 </ComboBox>
                                 <TextBlock x:Name="DetectionTargetStatus" Visibility="Collapsed"/>
                                 <TextBlock x:Name="PerformanceHint" Visibility="Collapsed"/>
+                                <TextBlock x:Name="PlateHint" Visibility="Collapsed" Text="Amarillo: lectura por confirmar. Celeste: 3 lecturas coincidentes. Capturas ON guarda y mejora el mismo registro." TextWrapping="Wrap" Foreground="#9CB4C5" FontSize="10.5" Margin="4,5,4,0"
+                                           ToolTip="Se requieren tres lecturas iguales con confianza OCR de al menos 80%. Se conserva el texto leído, sin corregir letras por números."/>
                                 <TextBlock x:Name="ModelStatus" Text="Modelo: pendiente" Foreground="#7796AA" FontSize="10.5" Margin="4,8,4,0"
-                                           ToolTip="Motor YOLO y proveedor de ejecución actual."/>
+                                           ToolTip="Motor y aceleración usados. Si falla la preparación, apagá y volvé a activar Detección con F8."/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -192,7 +196,7 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Margin="5,0,0,0">
-                                <CheckBox x:Name="MotionWakeEnabled" Content="DORMIR YOLO SIN MOVIMIENTO" IsChecked="True"
+                                <CheckBox x:Name="MotionWakeEnabled" Content="PAUSAR IA SIN MOVIMIENTO" IsChecked="True"
                                           ToolTip="Usa un detector liviano cerca de la línea y despierta YOLO sólo cuando hay movimiento. Es el modo que más puede ahorrar CPU en cámaras fijas."/>
                                 <CheckBox x:Name="LineNearOnly" Content="MOSTRAR SÓLO CERCA DE LA LÍNEA" IsChecked="True"
                                           ToolTip="Oculta detecciones alejadas de la línea para reducir ruido visual."/>
@@ -270,7 +274,7 @@
                 </Border>
 
                 <DockPanel Margin="4,2,4,2">
-                    <TextBlock Text="F8 YOLO   ·   F9 CAPTURA AHORA   ·   F10 CAPTURAS AUTO" Foreground="#65899F" FontSize="10"/>
+                    <TextBlock Text="F8 DETECCIÓN   ·   F9 CAPTURA AHORA   ·   F10 CAPTURAS AUTO" Foreground="#65899F" FontSize="10"/>
                     <TextBlock DockPanel.Dock="Right" Text="EDGE MENU · BORDE DERECHO" Foreground="#2EAECB" FontSize="9.5" FontWeight="SemiBold"
                                ToolTip="Con IrisTrack acoplado, llevá el mouse al borde derecho de la ventana analizada para abrir el menú invisible."/>
                 </DockPanel>

@@ -55,7 +55,7 @@ public partial class OverlayWindow : Window
             {
                 Width = Math.Max(2, d.Box.Width * sx),
                 Height = Math.Max(2, d.Box.Height * sy),
-                Stroke = System.Windows.Media.Brushes.Cyan,
+                Stroke = d.IsPlate && !d.PlateStable ? System.Windows.Media.Brushes.Gold : System.Windows.Media.Brushes.Cyan,
                 StrokeThickness = 2
             };
             Canvas.SetLeft(rect, d.Box.Left * sx);
@@ -71,7 +71,7 @@ public partial class OverlayWindow : Window
                 Padding = new Thickness(5, 2, 5, 2),
                 Child = new TextBlock
                 {
-                    Text = $"{d.ClassName}  {d.Confidence:P0}",
+                    Text = d.DisplayLabel,
                     Foreground = System.Windows.Media.Brushes.White,
                     FontWeight = FontWeights.SemiBold,
                     FontSize = 11
@@ -182,7 +182,7 @@ public partial class OverlayWindow : Window
                 Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(205, 7, 18, 28)),
                 CornerRadius = new CornerRadius(5),
                 Padding = new Thickness(6, 3, 6, 3),
-                Child = new TextBlock { Text = "YOLO EN ESPERA · movimiento", Foreground = System.Windows.Media.Brushes.LightGray, FontSize = 10 }
+                Child = new TextBlock { Text = "DETECCIÓN EN ESPERA · movimiento", Foreground = System.Windows.Media.Brushes.LightGray, FontSize = 10 }
             };
             Canvas.SetLeft(badge, Math.Max(8, (x1 + x2) / 2 - 70));
             Canvas.SetTop(badge, Math.Max(8, (y1 + y2) / 2 + 8));

@@ -24,24 +24,11 @@ public sealed class YoloDetector : IDisposable
         "Tostadora","Pileta","Heladera","Libro","Reloj","Jarrón","Tijera","Oso de peluche","Secador","Cepillo"
     };
 
-    public void Load(string modelPath)
+    public void Load(string modelPath, bool cpuOnly = false)
     {
         DisposeSession();
-        SessionOptions opts;
-        try
-        {
-            opts = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL, ExecutionMode = ExecutionMode.ORT_SEQUENTIAL, EnableMemoryPattern = false };
-            opts.AppendExecutionProvider_DML(0);
-            _session = new InferenceSession(modelPath, opts);
-            ProviderName = "DirectML (GPU/NPU compatible)";
-        }
-        catch
-        {
-            opts = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
-            opts.AppendExecutionProvider_CPU();
-            _session = new InferenceSession(modelPath, opts);
-            ProviderName = "CPU";
-        }
+        _session = OnnxSessionFactory.Create(modelPath, out var provider, cpuOnly);
+        ProviderName = provider;
         _inputName = _session.InputMetadata.Keys.First();
         var dims = _session.InputMetadata[_inputName].Dimensions;
         if (dims.Length >= 4)

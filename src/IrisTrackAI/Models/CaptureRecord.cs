@@ -9,4 +9,9 @@ public sealed record CaptureRecord(
     string? CropPath,
     string? FramePath,
     string? LinkedVideoPath,
-    string EventType = "Deteccion");
+    string EventType = "Deteccion",
+    string? PlateText = null,
+    float? OcrConfidence = null,
+    bool? PlateStable = null,
+    double? AnalysisElapsedSeconds = null,
+    double? VideoPositionSeconds = null);
