@@ -13,7 +13,7 @@ public partial class QuickEdgeMenuWindow : Window
     private const int CollapsedWidth = 5;
     private const int CollapsedHeight = 165;
     private const int ExpandedWidth = 214;
-    private const int ExpandedHeight = 430;
+    private const int ExpandedHeight = 480;
     private const int TopOffset = 48;
 
     private nint _hwnd;
@@ -59,7 +59,7 @@ public partial class QuickEdgeMenuWindow : Window
         _capturesEnabled = capturesEnabled;
         _hasIgnoreZones = hasIgnoreZones;
         _hasInterestZone = hasInterestZone;
-        ItemYolo.Text = yoloEnabled ? "YOLO ON" : "YOLO OFF";
+        ItemYolo.Text = yoloEnabled ? "DETECCIÓN ON" : "DETECCIÓN OFF";
         ItemCaptures.Text = capturesEnabled ? "CAPTURAS ON" : "CAPTURAS OFF";
         RefreshColors();
     }
@@ -182,6 +182,8 @@ public partial class QuickEdgeMenuWindow : Window
             "bicycle" => QuickEdgeCommand.DetectBicycle,
             "motorcycle" => QuickEdgeCommand.DetectMotorcycle,
             "vehicles" => QuickEdgeCommand.DetectVehicles,
+            "plates" => QuickEdgeCommand.DetectPlates,
+            "vehicles-plates" => QuickEdgeCommand.DetectVehiclesAndPlates,
             "drawline" => QuickEdgeCommand.DrawLine,
             "normal" => QuickEdgeCommand.NormalMode,
             "ignorezone" => QuickEdgeCommand.AddIgnoreZone,
@@ -209,6 +211,8 @@ public partial class QuickEdgeMenuWindow : Window
         SetItem(ItemBicycle, _objectiveTag == "1");
         SetItem(ItemMotorcycle, _objectiveTag == "3");
         SetItem(ItemVehicles, _objectiveTag == "2,3,5,7");
+        SetItem(ItemPlates, _objectiveTag == "plates");
+        SetItem(ItemVehiclesAndPlates, _objectiveTag == "vehicles-plates");
         SetItem(ItemNormal, !_lineMode);
         SetItem(ItemIgnoreZone, _hasIgnoreZones);
         SetItem(ItemInterestZone, _hasInterestZone);

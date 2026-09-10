@@ -24,7 +24,7 @@ public sealed class CaptureHistoryService
         return Path.Combine(pics, "IrisTrack AI", Sanitize(windowTitle));
     }
 
-    public async Task<CaptureRecord> SaveAsync(Bitmap frame, Detection d, string windowTitle, CancellationToken ct = default, string eventType = "Deteccion")
+    public async Task<CaptureRecord> SaveAsync(Bitmap frame, Detection d, string windowTitle, CancellationToken ct = default, string eventType = "Deteccion", DateTime? capturedAt = null, double? analysisElapsedSeconds = null)
     {
         var root = ResolveOutputFolder(windowTitle);
         var classDir = Path.Combine(root, Sanitize(d.ClassName));
@@ -46,7 +46,8 @@ public sealed class CaptureHistoryService
         {
             framePath = Path.Combine(classDir, stem + "_FOTOGRAMA.jpg"); frame.Save(framePath, ImageFormat.Jpeg);
         }
-        var record = new CaptureRecord(DateTime.Now, windowTitle, d.ClassName, d.Confidence, d.TrackId, cropPath, framePath, LinkedVideoPath, eventType);
+        var record = new CaptureRecord(capturedAt ?? DateTime.Now, windowTitle, d.ClassName, d.Confidence, d.TrackId, cropPath, framePath, LinkedVideoPath, eventType,
+            d.PlateText, d.OcrConfidence, d.IsPlate ? d.PlateStable : null, analysisElapsedSeconds);
         var json = JsonSerializer.Serialize(record);
         await File.AppendAllTextAsync(Path.Combine(root, "historial.jsonl"), json + Environment.NewLine, ct);
         return record;

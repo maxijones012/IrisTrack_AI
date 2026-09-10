@@ -19,10 +19,12 @@ public sealed class DetectionTracker
     {
         var now = DateTime.UtcNow;
         _tracks.RemoveAll(t => now - t.LastSeen > ttl);
+        var candidates = _tracks.ToArray();
+        var matched = new HashSet<long>();
         foreach (var d in detections)
         {
             Track? best = null; float bestIou = 0;
-            foreach (var t in _tracks.Where(t => t.ClassId == d.ClassId))
+            foreach (var t in candidates.Where(t => t.ClassId == d.ClassId && !matched.Contains(t.Id)))
             {
                 var iou = IoU(t.Box, d.Box);
                 if (iou > bestIou) { bestIou = iou; best = t; }
@@ -30,6 +32,7 @@ public sealed class DetectionTracker
             if (best is not null && bestIou >= 0.30f)
             {
                 best.Box = d.Box; best.LastSeen = now; d.TrackId = best.Id;
+                matched.Add(best.Id);
             }
             else
             {
@@ -45,6 +48,13 @@ public sealed class DetectionTracker
         var t = _tracks.FirstOrDefault(x => x.Id == d.TrackId);
         if (t is null || t.AutoCaptured) return false;
         t.AutoCaptured = true; return true;
+    }
+
+    public bool HasAutoCaptured(Detection d) => _tracks.FirstOrDefault(t => t.Id == d.TrackId)?.AutoCaptured == true;
+    public void MarkAutoCaptured(Detection d)
+    {
+        var track = _tracks.FirstOrDefault(t => t.Id == d.TrackId);
+        if (track is not null) track.AutoCaptured = true;
     }
 
     private static float IoU(RectangleF a, RectangleF b)

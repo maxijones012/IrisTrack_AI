@@ -50,6 +50,8 @@
             <TextBlock x:Name="ItemBicycle" Text="BICICLETA" Tag="bicycle" Style="{StaticResource QuickText}" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
             <TextBlock x:Name="ItemMotorcycle" Text="MOTO" Tag="motorcycle" Style="{StaticResource QuickText}" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
             <TextBlock x:Name="ItemVehicles" Text="VEHÍCULOS" Tag="vehicles" Style="{StaticResource QuickText}" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
+            <TextBlock x:Name="ItemPlates" Text="PATENTES" Tag="plates" Style="{StaticResource QuickText}" ToolTip="Lee patentes con el detector general desactivado." MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
+            <TextBlock x:Name="ItemVehiclesAndPlates" Text="VEHÍCULOS + PATENTES" Tag="vehicles-plates" Style="{StaticResource QuickText}" ToolTip="Busca vehículos y lee sus patentes. Requiere más procesamiento." MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
 
             <TextBlock Text="DIBUJAR LÍNEA" Tag="drawline" Style="{StaticResource QuickText}" Margin="0,12,0,0" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
             <TextBlock x:Name="ItemNormal" Text="MODO NORMAL" Tag="normal" Style="{StaticResource QuickText}" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
@@ -60,7 +62,7 @@
 
             <TextBlock x:Name="ItemCaptures" Text="CAPTURAS OFF" Tag="captures" Style="{StaticResource QuickText}" Margin="0,12,0,0" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
             <TextBlock Text="CAPTURA AHORA" Tag="manualcapture" Style="{StaticResource QuickText}" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
-            <TextBlock x:Name="ItemYolo" Text="YOLO ON" Tag="yolo" Style="{StaticResource QuickText}" Margin="0,12,0,0" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
+            <TextBlock x:Name="ItemYolo" Text="DETECCIÓN ON" Tag="yolo" Style="{StaticResource QuickText}" Margin="0,12,0,0" MouseLeftButtonUp="Item_MouseLeftButtonUp" MouseEnter="Item_MouseEnter" MouseLeave="Item_MouseLeave"/>
         </StackPanel>
     </Grid>
 </Window>
